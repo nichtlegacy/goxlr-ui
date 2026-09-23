@@ -736,7 +736,31 @@ export default {
                     presets: "Vorlagen"
                 },
 
-                shutdownUtility: "GoXLR Utility beenden"
+                shutdownUtility: "GoXLR Utility beenden",
+                virtualAudioRoutes: "Virtuelle GoXLR-Geräte",
+                virtualAudioInputs: "Eingabegeräte",
+                virtualAudioOutputs: "Ausgabegeräte",
+                optionalVirtualAudioRoutes: "Weitere Geräte anzeigen",
+                virtualAudioRouteAccessibility: "{device} in den macOS-Audiogeräten anzeigen",
+                virtualAudioRouteNames: {
+                    broadcastMixInput: "Broadcast Mix",
+                    microphoneInput: "Mikrofon",
+                    samplerCaptureInput: "Sampler-Aufnahme",
+                    chatMicInput: "Chat-Mikrofon",
+                    systemCaptureInput: "System-Aufnahme",
+                    gameCaptureInput: "Spiel-Aufnahme",
+                    chatCaptureInput: "Chat-Aufnahme",
+                    musicCaptureInput: "Musik-Aufnahme",
+                    sampleCaptureInput: "Sample-Aufnahme",
+                    lineInInput: "Line-In",
+                    consoleInput: "Konsole",
+                    dryMicInput: "Unbearbeitetes Mikrofon",
+                    systemOutput: "System",
+                    gameOutput: "Spiel",
+                    chatOutput: "Chat",
+                    musicOutput: "Musik",
+                    sampleOutput: "Sample",
+                },
             },
 
             aboutButton: "Über GoXLR",

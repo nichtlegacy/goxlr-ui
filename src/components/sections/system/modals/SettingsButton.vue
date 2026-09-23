@@ -36,6 +36,50 @@
                         @change="set_macos_aggregate_management"
                         :description="$t('message.system.settings.macosAggregateManagementAccessibility')"/>
 
+        <section v-if="is_macos()" class="virtualAudioRoutes" :aria-label="$t('message.system.settings.virtualAudioRoutes')">
+          <h3>{{ $t('message.system.settings.virtualAudioInputs') }}</h3>
+          <BooleanSetting
+              v-for="route in defaultVirtualAudioInputs"
+              :key="route.bit"
+              :label="$t(`message.system.settings.virtualAudioRouteNames.${route.key}`)"
+              :enabled="isVirtualAudioRouteEnabled(route.bit)"
+              :description="$t('message.system.settings.virtualAudioRouteAccessibility', { device: $t(`message.system.settings.virtualAudioRouteNames.${route.key}`) })"
+              @change="setVirtualAudioRoute(route.bit, $event)"
+          />
+
+          <h3>{{ $t('message.system.settings.virtualAudioOutputs') }}</h3>
+          <BooleanSetting
+              v-for="route in defaultVirtualAudioOutputs"
+              :key="route.bit"
+              :label="$t(`message.system.settings.virtualAudioRouteNames.${route.key}`)"
+              :enabled="isVirtualAudioRouteEnabled(route.bit)"
+              :description="$t('message.system.settings.virtualAudioRouteAccessibility', { device: $t(`message.system.settings.virtualAudioRouteNames.${route.key}`) })"
+              @change="setVirtualAudioRoute(route.bit, $event)"
+          />
+
+          <details class="optionalVirtualAudioRoutes">
+            <summary>{{ $t('message.system.settings.optionalVirtualAudioRoutes') }}</summary>
+            <h4>{{ $t('message.system.settings.virtualAudioInputs') }}</h4>
+            <BooleanSetting
+                v-for="route in optionalVirtualAudioInputs"
+                :key="route.bit"
+                :label="$t(`message.system.settings.virtualAudioRouteNames.${route.key}`)"
+                :enabled="isVirtualAudioRouteEnabled(route.bit)"
+                :description="$t('message.system.settings.virtualAudioRouteAccessibility', { device: $t(`message.system.settings.virtualAudioRouteNames.${route.key}`) })"
+                @change="setVirtualAudioRoute(route.bit, $event)"
+            />
+            <h4>{{ $t('message.system.settings.virtualAudioOutputs') }}</h4>
+            <BooleanSetting
+                v-for="route in optionalVirtualAudioOutputs"
+                :key="route.bit"
+                :label="$t(`message.system.settings.virtualAudioRouteNames.${route.key}`)"
+                :enabled="isVirtualAudioRouteEnabled(route.bit)"
+                :description="$t('message.system.settings.virtualAudioRouteAccessibility', { device: $t(`message.system.settings.virtualAudioRouteNames.${route.key}`) })"
+                @change="setVirtualAudioRoute(route.bit, $event)"
+            />
+          </details>
+        </section>
+
         <BooleanSetting :label="$t('message.system.settings.allowNetworkAccess')" :enabled="get_allow_network_access()"
                         @change="set_allow_network_access"
                         :description="$t('message.system.settings.allowNetworkAccessAccessibility')"/>
@@ -113,6 +157,37 @@ import ModalButton from "@/components/design/modal/ModalButton.vue";
 export default {
   name: "SettingsButton",
   computed: {
+    defaultVirtualAudioInputs() {
+      return [{bit: 1, key: "microphoneInput"}];
+    },
+    optionalVirtualAudioInputs() {
+      return [
+        {bit: 0, key: "broadcastMixInput"},
+        {bit: 2, key: "samplerCaptureInput"},
+        {bit: 3, key: "chatMicInput"},
+        {bit: 4, key: "systemCaptureInput"},
+        {bit: 5, key: "gameCaptureInput"},
+        {bit: 6, key: "chatCaptureInput"},
+        {bit: 7, key: "musicCaptureInput"},
+        {bit: 8, key: "sampleCaptureInput"},
+        {bit: 9, key: "lineInInput"},
+        {bit: 10, key: "consoleInput"},
+        {bit: 11, key: "dryMicInput"},
+      ];
+    },
+    defaultVirtualAudioOutputs() {
+      return [
+        {bit: 12, key: "systemOutput"},
+        {bit: 13, key: "gameOutput"},
+        {bit: 14, key: "chatOutput"},
+        {bit: 15, key: "musicOutput"},
+      ];
+    },
+    optionalVirtualAudioOutputs() {
+      return [
+        {bit: 16, key: "sampleOutput"},
+      ];
+    },
     languages() {
       return languages
     },
@@ -353,6 +428,22 @@ export default {
       websocket.send_daemon_command({"HandleMacOSAggregates": !value});
     },
 
+    getVirtualAudioRoutes() {
+      const mask = store.getConfig()?.macos_virtual_audio_routes;
+      return Number.isInteger(mask) ? mask >>> 0 : 0xF002;
+    },
+
+    isVirtualAudioRouteEnabled(bit) {
+      return (this.getVirtualAudioRoutes() & (1 << bit)) !== 0;
+    },
+
+    setVirtualAudioRoute(bit, enabled) {
+      const bitMask = 1 << bit;
+      const currentMask = this.getVirtualAudioRoutes();
+      const newMask = enabled ? currentMask | bitMask : currentMask & ~bitMask;
+      websocket.send_daemon_command({"SetMacOSVirtualAudioRoutes": newMask >>> 0});
+    },
+
     isAutostart() {
       if (store.getConfig() === undefined) {
         return false;
@@ -440,6 +531,35 @@ export default {
 </script>
 
 <style scoped>
+.settingList {
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+}
+
+.virtualAudioRoutes h3 {
+  margin: 0;
+  padding: 10px;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.virtualAudioRoutes h4 {
+  margin: 0;
+  padding: 10px;
+  color: #ddd;
+  font-size: 0.95rem;
+}
+
+.optionalVirtualAudioRoutes > summary {
+  padding: 10px;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.optionalVirtualAudioRoutes > summary:hover {
+  color: #fff;
+}
+
 .settingList > :nth-child(odd) {
   background-color: #353937;
 }

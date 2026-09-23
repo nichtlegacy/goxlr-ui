@@ -20,8 +20,8 @@ export default {
 <template>
   <div class="setting" @click="onChange">
     <div class="label">{{ label }}</div>
-    <div class="input" @click="onChange" role="checkbox" :aria-valuenow="enabled" :aria-label="label"
-         :aria-description="description" :aria-checked="enabled" @keydown.space="onChange" @keydown.enter="onChange"
+    <div class="input" @click.stop="onChange" role="checkbox" :aria-valuenow="enabled" :aria-label="label"
+         :aria-description="description" :aria-checked="enabled" @keydown.space.prevent.stop="onChange" @keydown.enter.prevent.stop="onChange"
          tabindex="0">
       <font-awesome-icon v-if="enabled" icon="fa-solid fa-square-check"/>
       <font-awesome-icon v-else icon="fa-solid fa-square"/>
