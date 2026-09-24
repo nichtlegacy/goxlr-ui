@@ -200,6 +200,9 @@ export default {
   data() {
     return {
       isShutdown: false,
+      virtualAudioRoutesDraft: null,
+      pendingVirtualAudioRouteWrites: 0,
+      virtualAudioRoutesRevision: 0,
     }
   },
 
@@ -429,7 +432,7 @@ export default {
     },
 
     getVirtualAudioRoutes() {
-      const mask = store.getConfig()?.macos_virtual_audio_routes;
+      const mask = this.virtualAudioRoutesDraft ?? store.getConfig()?.macos_virtual_audio_routes;
       return Number.isInteger(mask) ? mask >>> 0 : 0xF002;
     },
 
@@ -441,7 +444,26 @@ export default {
       const bitMask = 1 << bit;
       const currentMask = this.getVirtualAudioRoutes();
       const newMask = enabled ? currentMask | bitMask : currentMask & ~bitMask;
-      websocket.send_daemon_command({"SetMacOSVirtualAudioRoutes": newMask >>> 0});
+      this.virtualAudioRoutesDraft = newMask >>> 0;
+      this.virtualAudioRoutesRevision++;
+      this.pendingVirtualAudioRouteWrites++;
+
+      const finish = () => {
+        if (--this.pendingVirtualAudioRouteWrites !== 0) return;
+
+        const revision = this.virtualAudioRoutesRevision;
+        websocket.get_status().then((status) => {
+          if (this.pendingVirtualAudioRouteWrites !== 0 || this.virtualAudioRoutesRevision !== revision) return;
+          store.replaceData(status);
+          this.virtualAudioRoutesDraft = null;
+        }, () => {
+          if (this.pendingVirtualAudioRouteWrites === 0 && this.virtualAudioRoutesRevision === revision) {
+            this.virtualAudioRoutesDraft = null;
+          }
+        });
+      };
+
+      websocket.send_daemon_command({"SetMacOSVirtualAudioRoutes": this.virtualAudioRoutesDraft}).then(finish, finish);
     },
 
     isAutostart() {
