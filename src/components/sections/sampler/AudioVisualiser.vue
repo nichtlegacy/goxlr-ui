@@ -524,6 +524,10 @@ export default {
       cursorWidth: 0,
       progressColor: "#d7d7d7",
     });
+
+    // Samples play on the GoXLR, the waveform only needs decoding. A running context keeps
+    // a low-latency output stream open on the default device for as long as the UI is open.
+    this.wavesurfer.backend.ac?.suspend?.();
   },
 
   computed: {
