@@ -1,18 +1,22 @@
 <template>
   <CenteredContainer>
-    <GroupContainer :title="$t('message.system.title')">
-      <div class="buttons">
-        <MicSetupButton />
-        <SwitchDeviceButton v-if="store.getDeviceCount() > 1" />
-        <FirmwareUpdateButton />
-        <ShutdownButton />
-        <DeviceSettingsButton />
-        <SettingsButton />
-        <AboutButton />
-        <LicenseButton />
-        <HelpButton />
-      </div>
-    </GroupContainer>
+    <div class="systemColumn">
+      <GroupContainer :title="$t('message.system.title')">
+        <div class="buttons">
+          <MicSetupButton />
+          <SwitchDeviceButton v-if="store.getDeviceCount() > 1" />
+          <FirmwareUpdateButton />
+          <ShutdownButton />
+          <DeviceSettingsButton />
+          <SettingsButton />
+          <AboutButton />
+          <LicenseButton />
+          <HelpButton />
+        </div>
+      </GroupContainer>
+
+      <KeyboardShortcuts v-if="hasHotkeys"/>
+    </div>
   </CenteredContainer>
 </template>
 
@@ -29,15 +33,22 @@ import DeviceSettingsButton from "@/components/sections/system/modals/DeviceSett
 import SwitchDeviceButton from "@/components/sections/system/modals/SwitchDeviceButton.vue";
 import {store} from "@/store";
 import FirmwareUpdateButton from "@/components/sections/system/modals/FirmwareUpdateButton.vue";
+import KeyboardShortcuts from "@/components/sections/system/KeyboardShortcuts.vue";
 
 export default {
   name: "SystemComponent",
   computed: {
     store() {
       return store
+    },
+
+    // Only macOS daemons report the hotkey list.
+    hasHotkeys() {
+      return Array.isArray(store.getConfig()?.macos_hotkeys);
     }
   },
   components: {
+    KeyboardShortcuts,
     FirmwareUpdateButton,
     SwitchDeviceButton,
     DeviceSettingsButton,
@@ -54,6 +65,13 @@ export default {
 </script>
 
 <style scoped>
+.systemColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
 .buttons {
   display: flex;
   flex-direction: row;

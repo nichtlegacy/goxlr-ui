@@ -635,6 +635,67 @@ export default {
         system: {
             title: "System",
 
+            // Der macOS-Bereich "Tastenkürzel", nur sichtbar, wenn der Daemon Hotkeys meldet.
+            shortcuts: {
+                title: "Tastenkürzel",
+                explanation: "Steuere GoXLR-Kanäle und die App im Vordergrund von überall auf deinem Mac. Kürzel brauchen mindestens eine der Tasten ⌃ ⌥ ⇧ ⌘, außer F13 bis F19.",
+                empty: "Noch keine Tastenkürzel.",
+                accessibilityList: "Tastenkürzel",
+                rowLabel: "Kürzel {position}",
+
+                actionFor: "Aktion für {row}",
+                channelFor: "Kanal für {row}",
+                unknownAction: "Unbekannte Aktion",
+                actions: {
+                    VolumeUp: "Lauter",
+                    VolumeDown: "Leiser",
+                    ToggleMute: "Kanal stumm/laut schalten",
+                    ToggleFrontmostAppMute: "Vordergrund-App stumm/laut schalten",
+                },
+
+                unassigned: "Keine Taste",
+                pressKeys: "Tasten drücken…",
+                record: "Aufnehmen",
+                recording: "Abbrechen",
+                recordFor: "Tastenkombination für {row} aufnehmen, aktuell {combo}",
+                recordingFor: "{row} wird aufgenommen, drücke die Tastenkombination oder Escape zum Abbrechen",
+                remove: "{row} entfernen",
+                add: "Kürzel hinzufügen",
+
+                needsModifier: "Nutze mindestens eine der Tasten ⌃ ⌥ ⇧ ⌘. Nur F13 bis F19 funktionieren allein.",
+                duplicate: "Kürzel {position} nutzt diese Kombination bereits, dieses hier wird nicht gespeichert.",
+                saveFailed: "Die Tastenkürzel konnten nicht gespeichert werden",
+
+                addedAnnouncement: "Kürzel hinzugefügt, wähle eine Aktion und nimm eine Tastenkombination auf",
+                removedAnnouncement: "Kürzel entfernt",
+                recordingAnnouncement: "Drücke die Tastenkombination, Escape bricht ab",
+                cancelledAnnouncement: "Aufnahme abgebrochen",
+                setAnnouncement: "Kürzel auf {combo} gesetzt",
+
+                keypad: "Ziffernblock {key}",
+                modifierNames: {
+                    control: "Control",
+                    option: "Option",
+                    shift: "Umschalt",
+                    command: "Befehl",
+                },
+                keyNames: {
+                    ArrowUp: "Pfeil nach oben",
+                    ArrowDown: "Pfeil nach unten",
+                    ArrowLeft: "Pfeil nach links",
+                    ArrowRight: "Pfeil nach rechts",
+                    Space: "Leertaste",
+                    Enter: "Zeilenschalter",
+                    Tab: "Tabulator",
+                    Backspace: "Rückschritt",
+                    Delete: "Entfernen",
+                    Home: "Pos1",
+                    End: "Ende",
+                    PageUp: "Bild auf",
+                    PageDown: "Bild ab",
+                },
+            },
+
             powerButton: "Energie-Aktionen",
             power: {
                 shutdownTitle: "Abschaltaktionen",

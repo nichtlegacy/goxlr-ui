@@ -675,6 +675,67 @@ export default {
         system: {
             title: "System",
 
+            // The macOS "Keyboard shortcuts" section, only shown when the daemon reports hotkeys.
+            shortcuts: {
+                title: "Keyboard shortcuts",
+                explanation: "Control GoXLR channels and the frontmost app from anywhere on your Mac. Shortcuts need at least one of ⌃ ⌥ ⇧ ⌘, except F13 to F19.",
+                empty: "No keyboard shortcuts yet.",
+                accessibilityList: "Keyboard shortcuts",
+                rowLabel: "Shortcut {position}",
+
+                actionFor: "Action for {row}",
+                channelFor: "Channel for {row}",
+                unknownAction: "Unknown action",
+                actions: {
+                    VolumeUp: "Raise volume",
+                    VolumeDown: "Lower volume",
+                    ToggleMute: "Mute/unmute channel",
+                    ToggleFrontmostAppMute: "Mute/unmute frontmost app",
+                },
+
+                unassigned: "No key",
+                pressKeys: "Press keys…",
+                record: "Record",
+                recording: "Cancel",
+                recordFor: "Record key combination for {row}, currently {combo}",
+                recordingFor: "Recording {row}, press the key combination or Escape to cancel",
+                remove: "Remove {row}",
+                add: "Add shortcut",
+
+                needsModifier: "Add at least one of ⌃ ⌥ ⇧ ⌘. Only F13 to F19 work on their own.",
+                duplicate: "Shortcut {position} already uses this combination, this one isn't saved.",
+                saveFailed: "Couldn't save the keyboard shortcuts",
+
+                addedAnnouncement: "Shortcut added, choose an action and record a key combination",
+                removedAnnouncement: "Shortcut removed",
+                recordingAnnouncement: "Press the key combination, Escape cancels",
+                cancelledAnnouncement: "Recording cancelled",
+                setAnnouncement: "Shortcut set to {combo}",
+
+                keypad: "Keypad {key}",
+                modifierNames: {
+                    control: "Control",
+                    option: "Option",
+                    shift: "Shift",
+                    command: "Command",
+                },
+                keyNames: {
+                    ArrowUp: "Up Arrow",
+                    ArrowDown: "Down Arrow",
+                    ArrowLeft: "Left Arrow",
+                    ArrowRight: "Right Arrow",
+                    Space: "Space",
+                    Enter: "Return",
+                    Tab: "Tab",
+                    Backspace: "Delete",
+                    Delete: "Forward Delete",
+                    Home: "Home",
+                    End: "End",
+                    PageUp: "Page Up",
+                    PageDown: "Page Down",
+                },
+            },
+
             powerButton: "Power Action",
             power: {
                 shutdownTitle: "Shutdown Actions",
