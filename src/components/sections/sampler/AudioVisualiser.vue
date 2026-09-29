@@ -530,6 +530,12 @@ export default {
     this.wavesurfer.backend.ac?.suspend?.();
   },
 
+  unmounted() {
+    // Release the waveform, its listeners and the decoded buffer. The shared AudioContext is left alone.
+    this.wavesurfer?.destroy();
+    this.wavesurfer = undefined;
+  },
+
   computed: {
     left_handle_left() {
       return this.leftPosition + "px";
@@ -559,6 +565,10 @@ export default {
     },
 
     sampleName() {
+      if (this.wavesurfer === undefined) {
+        return;
+      }
+
       if (this.sampleName === "") {
         this.wavesurfer.empty();
         return;

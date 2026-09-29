@@ -22,6 +22,7 @@ export default {
     return {
       localFieldValue: 0,
       announceValue: '',
+      pressed: false,
     }
   },
 
@@ -56,6 +57,18 @@ export default {
     },
 
     mouseDown() {
+      // Key repeat can fire this multiple times, only pause once per press.
+      if (this.pressed) {
+        return;
+      }
+      this.pressed = true;
+
+      // If the release happens outside the slider (or the window loses focus), the element never sees the
+      // mouseup, which would leave the store paused forever. Catch those cases on the window.
+      window.addEventListener("pointerup", this.mouseUp);
+      window.addEventListener("mouseup", this.mouseUp);
+      window.addEventListener("blur", this.mouseUp);
+
       store.pausePatchPath(this.storePath);
       store.pause();
       this.$emit("mouse-down", this.id)
@@ -105,7 +118,19 @@ export default {
     },
 
     mouseUp() {
+      if (!this.pressed) {
+        return;
+      }
       this.$emit("mouse-up", this.id)
+      this.releasePress();
+    },
+
+    releasePress() {
+      this.pressed = false;
+      window.removeEventListener("pointerup", this.mouseUp);
+      window.removeEventListener("mouseup", this.mouseUp);
+      window.removeEventListener("blur", this.mouseUp);
+
       store.resumePatchPath(this.storePath);
       store.resume();
     },
@@ -113,6 +138,13 @@ export default {
     update(e) {
       // Value has changed, emit something upwards..
       this.$emit("value-updated", e.target.value, this.id)
+    }
+  },
+
+  unmounted() {
+    // Don't leave the store paused if we're removed mid-drag.
+    if (this.pressed) {
+      this.releasePress();
     }
   },
 

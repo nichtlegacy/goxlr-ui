@@ -27,19 +27,63 @@ export default {
       point_count: 30,
 
       poll_rate: 100,
+      poll_timeout: 1000,
+      poll_timer: undefined,
+      poll_in_flight: false,
+
+      frame_request: undefined,
       last_paint: 0
     }
   },
 
   methods: {
+    start: function() {
+      this.active_local = true;
+
+      if (this.frame_request === undefined) {
+        this.last_paint = performance.now();
+        this.frame_request = requestAnimationFrame(this.draw);
+      }
+
+      // Only ever run a single poll chain, if a request is in flight it will schedule the next one.
+      if (!this.poll_in_flight && this.poll_timer === undefined) {
+        this.pollData();
+      }
+    },
+
     stop: function() {
       this.active_local = false;
+      this.points = [];
+
+      clearTimeout(this.poll_timer);
+      this.poll_timer = undefined;
+
+      if (this.frame_request !== undefined) {
+        cancelAnimationFrame(this.frame_request);
+        this.frame_request = undefined;
+      }
     },
 
     pollData: function () {
       let self = this
+      this.poll_timer = undefined;
 
-      websocket.get_mic_level(store.getActiveSerial()).then((data) => {
+      if (!this.active_local || this.poll_in_flight) {
+        return;
+      }
+      this.poll_in_flight = true;
+
+      // If a reply gets lost, don't wait on it forever, just carry on polling.
+      let timeout;
+      let timeout_promise = new Promise((resolve, reject) => {
+        timeout = setTimeout(() => reject("Mic Level Timeout"), this.poll_timeout);
+      });
+
+      Promise.race([websocket.get_mic_level(store.getActiveSerial()), timeout_promise]).then((data) => {
+        if (!self.active_local) {
+          return;
+        }
+
         let value = data['MicLevel']
         if (value < this.minimum_value) {
           value = this.minimum_value
@@ -56,19 +100,29 @@ export default {
         while (self.points.length > this.point_count) {
           self.points.shift()
         }
+      }).catch(() => {
+        // Timed out or failed, we'll just try again on the next poll.
+      }).finally(() => {
+        clearTimeout(timeout);
+        self.poll_in_flight = false;
 
         if (self.active_local) {
-          setTimeout(this.pollData, this.poll_rate)
-        } else {
-          this.points = []
+          self.poll_timer = setTimeout(self.pollData, self.poll_rate)
         }
       })
     },
 
     draw: function (timestamp) {
+      this.frame_request = undefined
+
+      // Stop the loop entirely while we're inactive, start() will pick it back up.
+      if (!this.active_local) {
+        return
+      }
+
       // Work out if we should draw...
-      if (!this.active_local || this.points.length === 0) {
-        requestAnimationFrame(this.draw)
+      if (this.points.length === 0) {
+        this.frame_request = requestAnimationFrame(this.draw)
         return
       }
 
@@ -137,7 +191,7 @@ export default {
       this.last_paint = timestamp
 
       // Call back on the next animation frame
-      requestAnimationFrame(this.draw)
+      this.frame_request = requestAnimationFrame(this.draw)
     },
 
     draw_peaking: function () {
@@ -246,11 +300,8 @@ export default {
     this.canvas.fillStyle = '#00ff00'
     this.canvas.lineWidth = 2
 
-    this.draw()
-
     if (this.active) {
-      this.active_local = true;
-      this.pollData();
+      this.start();
     }
   },
 
@@ -260,9 +311,10 @@ export default {
 
   watch: {
     active(newValue) {
-      this.active_local = newValue;
       if (newValue === true) {
-        this.pollData();
+        this.start();
+      } else {
+        this.stop();
       }
     }
   }

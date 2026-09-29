@@ -14,7 +14,8 @@ export default {
   },
   data() {
     return {
-      isActive: true
+      // Start from the selected prop, so unselected tabs don't mount their content once at startup.
+      isActive: this.selected
     }
   },
 
@@ -24,12 +25,15 @@ export default {
     }
   },
 
-  mounted() {
-    this.isActive = this.selected;
-  },
-
   created() {
     this.$parent.tabs.push(this);
+  },
+
+  unmounted() {
+    let index = this.$parent.tabs.indexOf(this);
+    if (index !== -1) {
+      this.$parent.tabs.splice(index, 1);
+    }
   }
 }
 </script>

@@ -38,13 +38,15 @@ export class Websocket {
     #disconnect_callback = undefined;
     #message_queue = []
     #websocket = undefined;
+    #closed_sockets = new WeakSet();
     #command_index = 0;
 
     connect() {
-        this.#websocket = new WebSocket(getWebsocketAddress());
+        let socket = new WebSocket(getWebsocketAddress());
+        this.#websocket = socket;
 
         let self = this;
-        self.#websocket.addEventListener('message', function (event) {
+        socket.addEventListener('message', function (event) {
             // A message can be one of two things, either a DaemonStatus, or an error..
             let json = JSON.parse(event.data);
 
@@ -65,44 +67,56 @@ export class Websocket {
             }
         });
 
-        self.#websocket.addEventListener('open', function () {
+        socket.addEventListener('open', function () {
             if (self.#connection_promise[0] !== undefined) {
                 self.#connection_promise[0]();
             }
             self.#connection_promise = [];
         });
 
-        self.#websocket.addEventListener('close', function () {
-            if (self.#connection_promise[1] !== undefined) {
-                self.#connection_promise[1]();
-            }
-            self.#connection_promise = [];
-
-            if (self.#disconnect_callback !== undefined) {
-                self.#disconnect_callback();
-                self.#disconnect_callback = undefined;
-            }
-
-            self.#websocket.close();
-        });
-
-        self.#websocket.addEventListener('error', function () {
-            if (self.#connection_promise[1] !== undefined) {
-                self.#connection_promise[1]();
-            }
-            self.#connection_promise = [];
-
-            if (self.#disconnect_callback !== undefined) {
-                self.#disconnect_callback();
-                self.#disconnect_callback = undefined;
-            }
-            self.#websocket.close();
-        });
+        // Both 'error' and 'close' can fire for the same socket, only handle it once.
+        socket.addEventListener('close', () => self.#handle_closed(socket));
+        socket.addEventListener('error', () => self.#handle_closed(socket));
 
         return new Promise((resolve, reject) => {
             self.#connection_promise[0] = resolve;
             self.#connection_promise[1] = reject;
         });
+    }
+
+    // Force the current socket closed (eg, on a timeout), this triggers the disconnect handling immediately.
+    close() {
+        let socket = this.#websocket;
+        if (socket === undefined) {
+            return;
+        }
+        this.#handle_closed(socket);
+        socket.close();
+    }
+
+    #handle_closed(socket) {
+        if (this.#closed_sockets.has(socket)) {
+            return;
+        }
+        this.#closed_sockets.add(socket);
+
+        if (this.#connection_promise[1] !== undefined) {
+            this.#connection_promise[1]();
+        }
+        this.#connection_promise = [];
+
+        // Nothing is coming back for anything still waiting, so reject them rather than leave them hanging.
+        let queue = this.#message_queue;
+        this.#message_queue = [];
+        for (let id of Object.keys(queue)) {
+            queue[id][1]("Websocket Disconnected");
+        }
+
+        if (this.#disconnect_callback !== undefined) {
+            let callback = this.#disconnect_callback;
+            this.#disconnect_callback = undefined;
+            callback();
+        }
     }
 
     on_disconnect(func) {
@@ -173,6 +187,10 @@ export class Websocket {
     }
 
     #sendRequest(request) {
+        if (this.#websocket === undefined || this.#websocket.readyState !== WebSocket.OPEN) {
+            return Promise.reject("Websocket not connected");
+        }
+
         let id = this.#command_index++;
 
         // Wrap this request with an ID
@@ -202,21 +220,55 @@ export class Websocket {
 
 export const websocket = new Websocket();
 
-export function runWebsocket() {
-    // Let's attempt to connect the websocket...
-    websocket.connect().then(() => {
-        // We got a connection, try fetching the status...
-        websocket.get_status().then((data) => {
-            store.socketConnected(data);
+const RETRY_DELAY_MIN = 500;
+const RETRY_DELAY_MAX = 5000;
+const CONNECT_TIMEOUT = 5000;
+let retry_delay = RETRY_DELAY_MIN;
 
-            websocket.on_disconnect(() => {
-                store.socketDisconnected();
-                setTimeout(runWebsocket, 1000);
-            })
-        });
+export function runWebsocket() {
+    let finished = false;
+    let connected = false;
+
+    // Schedules exactly one retry per attempt, no matter how many things fail.
+    let retry = () => {
+        if (finished) {
+            return;
+        }
+        finished = true;
+        clearTimeout(timeout);
+
+        // Make sure the old socket is dead before we try again..
+        websocket.close();
+
+        setTimeout(runWebsocket, retry_delay);
+        retry_delay = Math.min(retry_delay * 2, RETRY_DELAY_MAX);
+    };
+
+    // If we can't connect and get a status in time, give up on this socket and start again.
+    let timeout = setTimeout(() => {
+        console.log("Websocket connection timed out, retrying..");
+        retry();
+    }, CONNECT_TIMEOUT);
+
+    // Register this before anything else, so a close before the status arrives still triggers a reconnect.
+    websocket.on_disconnect(() => {
+        if (connected) {
+            store.socketDisconnected();
+        }
+        retry();
+    });
+
+    // Let's attempt to connect the websocket, then fetch the status...
+    websocket.connect().then(() => websocket.get_status()).then((data) => {
+        if (finished) {
+            return;
+        }
+        clearTimeout(timeout);
+        connected = true;
+        retry_delay = RETRY_DELAY_MIN;
+        store.socketConnected(data);
     }).catch(() => {
-        // Wait 1 second, then try again..
-        setTimeout(runWebsocket, 1000);
+        retry();
     });
 }
 

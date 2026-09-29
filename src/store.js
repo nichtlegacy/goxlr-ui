@@ -1,5 +1,6 @@
 import { reactive } from "vue";
 import { applyOperation } from "fast-json-patch";
+import { websocket } from "@/util/sockets";
 
 
 export const store = reactive({
@@ -10,6 +11,7 @@ export const store = reactive({
     activeSerial: "",
 
     pausedPaths: [],
+    resyncing: false,
 
     on_connected: [],
     on_disconnected: [],
@@ -32,7 +34,7 @@ export const store = reactive({
     },
 
     onDisconnected(func) {
-        this.on_disconnected(func);
+        this.on_disconnected.push(func);
     },
 
     socketDisconnected() {
@@ -51,6 +53,10 @@ export const store = reactive({
 
     socketConnected(status) {
         this.has_connected = true;
+
+        // A fresh connection always takes the new status, anything paused belonged to the old connection.
+        this.active = true;
+        this.pausedPaths = [];
         this.replaceData(status);
         this.is_connected = true;
 
@@ -163,15 +169,36 @@ export const store = reactive({
     // eslint-disable-next-line no-unused-vars
     patchData(json) {
         if (this.have_device) {
-            for (let patch of json.Patch) {
-                if (this.pausedPaths.includes(patch.path)) {
-                    continue;
-                }
+            try {
+                for (let patch of json.Patch) {
+                    if (this.pausedPaths.includes(patch.path)) {
+                        continue;
+                    }
 
-                applyOperation(this.status, patch, true, true, false);
+                    applyOperation(this.status, patch, true, true, false);
+                }
+            } catch (e) {
+                // Our copy of the status no longer matches the daemon, pull a full status to get back in sync.
+                console.error("Failed to apply patch, requesting full status", e);
+                this.resync();
             }
             this.validateActive();
         }
+    },
+
+    resync() {
+        if (this.resyncing) {
+            return;
+        }
+        this.resyncing = true;
+
+        websocket.get_status().then((data) => {
+            this.replaceData(data);
+        }).catch(() => {
+            // If the socket is gone, the reconnect will fetch a fresh status anyway.
+        }).finally(() => {
+            this.resyncing = false;
+        });
     },
 
     validateActive() {

@@ -29,7 +29,11 @@ export default {
 
   methods: {
     getLatest() {
-      fetch(this.getPath())
+      // This is purely informational, so don't let a slow or unreachable GitHub hang around.
+      let controller = new AbortController();
+      let timeout = setTimeout(() => controller.abort(), 5000);
+
+      fetch(this.getPath(), {signal: controller.signal})
           .then(response => {
             if (response.status !== 200) {
               return undefined;
@@ -40,13 +44,17 @@ export default {
             if (data === undefined) {
               return;
             }
-            fetch(data[0].url)
+            return fetch(data[0].url, {signal: controller.signal})
                 .then(response => response.json())
                 .then(data => {
                   this.version = data.tag_name.substring(1);
                   this.release_path = data.html_url;
                 })
-          });
+          })
+          .catch(() => {
+            // Ignore, we simply won't show an update notice.
+          })
+          .finally(() => clearTimeout(timeout));
     },
 
     hasVersion() {
@@ -195,7 +203,12 @@ export default {
   },
 
   mounted() {
-    this.getLatest();
+    // Delay the check so it doesn't compete with the initial connection.
+    this.check_timer = setTimeout(() => this.getLatest(), 10000);
+  },
+
+  unmounted() {
+    clearTimeout(this.check_timer);
   }
 }
 </script>

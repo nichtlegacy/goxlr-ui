@@ -210,6 +210,9 @@ export default {
       let self = this;
       this.lastValue = this.fieldValue;
 
+      // Never run more than one interval at a time.
+      clearInterval(this.timer);
+
       this.timer = setInterval(() => {
         if (self.lastValue !== self.fieldValue) {
           this.$emit('value-changed', self.id, self.fieldValue, false);
@@ -220,6 +223,7 @@ export default {
 
     setMouseUp() {
       clearInterval(this.timer);
+      this.timer = undefined;
 
       // Emit the latest value..
       this.$emit('value-changed', this.id, this.fieldValue, true);
@@ -264,6 +268,10 @@ export default {
     getValue() {
       return this.fieldValue;
     }
+  },
+
+  unmounted() {
+    clearInterval(this.timer);
   },
 
   mounted() {
