@@ -59,6 +59,8 @@ export class Websocket {
                 store.patchData(message_data);
             } else if (message_data["MicLevel"] !== undefined) {
                 self.#fulfill_promise(message_id, message_data, true);
+            } else if (message_data["MacOSAppLevels"] !== undefined) {
+                self.#fulfill_promise(message_id, message_data, true);
             } else if (message_data === "Ok") {
                 self.#fulfill_promise(message_id, message_data, true);
             } else {
@@ -159,6 +161,11 @@ export class Websocket {
             "GetMicLevel": serial,
         }
         return this.#sendRequest(request);
+    }
+
+    // A unit variant on the daemon side, so serde expects the bare string rather than an object.
+    get_app_levels() {
+        return this.#sendRequest("GetMacOSAppLevels");
     }
 
     run_firmware_update(serial, firmware_file_path, force) {

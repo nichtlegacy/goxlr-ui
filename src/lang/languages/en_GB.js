@@ -101,6 +101,7 @@ export default {
             lighting: "Lighting",
             routing: "Routing",
             system: "System",
+            apps: "Apps",
 
             // Navigation Sections on the Lighting Page
             lightingGlobal: "Global",
@@ -865,6 +866,37 @@ export default {
 
             licenses: "Licenses",
             help: "Help",
+        },
+
+        // The macOS per-app audio page, only shown when the Utility runs on macOS.
+        apps: {
+            title: "Apps",
+            accessibilityList: "Apps playing audio",
+            empty: "No apps are playing audio right now.\nApps show up here once they play sound, apps with saved settings stay listed.",
+            notRunning: "Not running",
+
+            output: "Output for {app}",
+            ownOutput: "App's own output ({device})",
+            ownOutputUnknown: "App's own output",
+            notGoXLR: "not GoXLR",
+            routeDisabled: "{route} (device hidden)",
+
+            volume: "Volume for {app}",
+            volumeUnity: "100% leaves the app's volume unchanged",
+            mute: "Mute {app}",
+
+            menu: "More options for {app}",
+            hide: "Hide",
+            reset: "Reset",
+
+            hiddenApps: "Hidden apps ({count})",
+            hiddenAppsList: "Hidden apps",
+            unhide: "Unhide",
+            unhideApp: "Unhide {app}",
+
+            hiddenAnnouncement: "{app} hidden",
+            resetAnnouncement: "{app} reset to default",
+            unhiddenAnnouncement: "{app} shown again",
         },
 
         deviceSelector: {

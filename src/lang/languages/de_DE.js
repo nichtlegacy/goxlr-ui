@@ -68,6 +68,7 @@ export default {
             lighting: "Beleuchtung",
             routing: "Routing",
             system: "System",
+            apps: "Apps",
 
             // Navigation Sections on the Lighting Page
             lightingGlobal: "Global",
@@ -815,6 +816,37 @@ export default {
 
             licenses: "Lizenzen",
             help: "Hilfe",
+        },
+
+        // Die macOS-Seite für Audio pro App, nur sichtbar, wenn das Utility unter macOS läuft.
+        apps: {
+            title: "Apps",
+            accessibilityList: "Apps mit Audiowiedergabe",
+            empty: "Gerade gibt keine App Audio wieder.\nApps erscheinen hier, sobald sie Ton abspielen, Apps mit gespeicherten Einstellungen bleiben aufgelistet.",
+            notRunning: "Nicht gestartet",
+
+            output: "Ausgabe für {app}",
+            ownOutput: "Eigene Ausgabe der App ({device})",
+            ownOutputUnknown: "Eigene Ausgabe der App",
+            notGoXLR: "nicht GoXLR",
+            routeDisabled: "{route} (Gerät ausgeblendet)",
+
+            volume: "Lautstärke für {app}",
+            volumeUnity: "Bei 100% bleibt die Lautstärke der App unverändert",
+            mute: "{app} stummschalten",
+
+            menu: "Weitere Optionen für {app}",
+            hide: "Ausblenden",
+            reset: "Zurücksetzen",
+
+            hiddenApps: "Ausgeblendete Apps ({count})",
+            hiddenAppsList: "Ausgeblendete Apps",
+            unhide: "Einblenden",
+            unhideApp: "{app} einblenden",
+
+            hiddenAnnouncement: "{app} ausgeblendet",
+            resetAnnouncement: "{app} auf Standard zurückgesetzt",
+            unhiddenAnnouncement: "{app} wieder eingeblendet",
         },
 
         // Strings used in Profile and Microphone Profile Management.

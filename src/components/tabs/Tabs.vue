@@ -121,6 +121,7 @@ export default {
           case "Digit6":
           case "Digit7":
           case "Digit8":
+          case "Digit9":
             nextTab = tabs[Number(event.code[5]) - 1];
             break;
           default:

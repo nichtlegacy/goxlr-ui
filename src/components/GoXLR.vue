@@ -52,6 +52,10 @@
             <SystemComponent/>
           </ContentContainer>
         </Tab>
+        <!-- Tabs register in creation order, so a tab that appears later lands at the end anyway, keep it there. -->
+        <Tab id="apps" v-if="hasAppAudio()" :name="$t('message.navigation.apps')">
+          <AppsTab/>
+        </Tab>
       </Tabs>
     </template>
     <VersionCheck @firmware-click="onFirmwareClicked" />
@@ -146,11 +150,13 @@ import {HighlightArea} from "@/components/visualisation/VisualiserHelper";
 import Language from "@/components/Language.vue";
 import AccessibleModal from "@/components/design/modal/AccessibleModal.vue";
 import ProgressBar from "@/components/design/ProgressBar.vue";
+import AppsTab from "@/components/sections/AppsTab.vue";
 
 export default {
   name: "GoXLR",
   expose: ['openFirmwareUpdateProgressModal'],
   components: {
+    AppsTab,
     ProgressBar,
     AccessibleModal,
     Language,
@@ -228,6 +234,12 @@ export default {
       }
 
       return store.getConfig().hasOwnProperty("locale");
+    },
+
+    // Only present when the daemon runs on macOS with the virtual audio driver.
+    hasAppAudio() {
+      let config = store.getConfig();
+      return config !== undefined && config.macos_app_audio !== undefined && config.macos_app_audio !== null;
     },
 
     isDeviceSet() {
