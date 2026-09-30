@@ -904,6 +904,8 @@ export default {
 
             hiddenApps: "Ausgeblendete Apps ({count})",
             hiddenAppsList: "Ausgeblendete Apps",
+            otherApps: "Weitere Apps mit Audio ({count})",
+            otherAppsList: "Weitere Apps mit Audio",
             unhide: "Einblenden",
             unhideApp: "{app} einblenden",
 

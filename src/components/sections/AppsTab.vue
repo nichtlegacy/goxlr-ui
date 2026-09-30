@@ -16,6 +16,24 @@
           />
         </ul>
 
+        <!-- Apps coreaudiod knows about but that are silent and have no rule, so they can be
+             assigned an output before they start playing without crowding the list. -->
+        <details v-if="otherEntries.length > 0" class="hiddenApps otherApps">
+          <summary>{{ $t('message.apps.otherApps', { count: otherEntries.length }) }}</summary>
+          <ul class="rows" :aria-label="$t('message.apps.otherAppsList')">
+            <AppRow v-for="entry in otherEntries" :key="entry.bundle_id"
+                    :entry="entry"
+                    :rule="effectiveRule(entry.bundle_id)"
+                    :level="levels[entry.bundle_id] || 0"
+                    :route-options="getRouteOptions(effectiveRule(entry.bundle_id).route)"
+                    :own-output-label="getOwnOutputLabel(entry)"
+                    :menu-button-id="getMenuButtonId(entry.bundle_id)"
+                    @change="updateRule"
+                    @open-menu="openMenu"
+            />
+          </ul>
+        </details>
+
         <DropMenu :options="menuOptions" ref="contextMenu" menu_id="app_menu" @option-clicked="onMenuOption"/>
 
         <details v-if="hiddenApps.length > 0" class="hiddenApps">
@@ -118,7 +136,22 @@ export default {
             device_route: null,
           })).sort((a, b) => a.name.localeCompare(b.name));
 
-      return running.concat(saved);
+      // Silent apps without a rule are listed separately in otherEntries.
+      return running.filter((app) => app.playing || this.rules[app.bundle_id] !== undefined)
+          .concat(saved);
+    },
+
+    otherEntries() {
+      let listed = this.entries.map((app) => app.bundle_id);
+      return this.runningApps
+          .filter((app) => !listed.includes(app.bundle_id))
+          .map((app) => ({
+            bundle_id: app.bundle_id,
+            name: app.name || this.getName(app.bundle_id),
+            running: true,
+            playing: false,
+            device_route: app.device_route,
+          })).sort((a, b) => a.name.localeCompare(b.name));
     },
 
     hiddenApps() {
