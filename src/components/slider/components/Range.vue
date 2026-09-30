@@ -3,7 +3,8 @@
     <div :class="{ 'rotation': needsRotation }">
       <input class="slider" ref="slider" type="range" v-bind:style="getCurrentStyle" v-bind:min="minValue"
              v-bind:max="maxValue" v-bind:value="localFieldValue" v-on:input="update"
-             v-on:mousedown="mouseDown" v-on:mouseup="mouseUp" v-on:keydown="mouseDown" v-on:keyup="mouseUp"
+             v-on:mousedown="mouseDown" v-on:mouseup="mouseUp" v-on:keydown="keyDown" v-on:keyup="mouseUp"
+             v-on:blur="mouseUp"
              v-on:touchstart="mouseDown" v-on:touchend="mouseUp" v-on:touchcancel="mouseUp" v-on:touchmove="touchMove"
              :aria-label="title" :aria-description="title" :aria-valuetext="getReportedValue()" :step="step"
              :disabled="disabled"
@@ -14,6 +15,10 @@
 
 <script>
 import {store} from "@/store";
+
+// The keys a range input changes its value on, anything else (Tab, shortcuts..) mustn't pause the store.
+const VALUE_KEYS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Up", "Down", "Left", "Right",
+  "PageUp", "PageDown", "Home", "End"];
 
 export default {
   name: "RangeSelector",
@@ -56,6 +61,19 @@ export default {
       return this.announceValue;
     },
 
+    keyDown(e) {
+      if (VALUE_KEYS.includes(e.key)) {
+        this.mouseDown();
+      }
+    },
+
+    // The keyup can land on another element if focus moved while the key was held.
+    windowKeyUp(e) {
+      if (VALUE_KEYS.includes(e.key)) {
+        this.mouseUp();
+      }
+    },
+
     mouseDown() {
       // Key repeat can fire this multiple times, only pause once per press.
       if (this.pressed) {
@@ -68,6 +86,7 @@ export default {
       window.addEventListener("pointerup", this.mouseUp);
       window.addEventListener("mouseup", this.mouseUp);
       window.addEventListener("blur", this.mouseUp);
+      window.addEventListener("keyup", this.windowKeyUp);
 
       store.pausePatchPath(this.storePath);
       store.pause();
@@ -130,6 +149,7 @@ export default {
       window.removeEventListener("pointerup", this.mouseUp);
       window.removeEventListener("mouseup", this.mouseUp);
       window.removeEventListener("blur", this.mouseUp);
+      window.removeEventListener("keyup", this.windowKeyUp);
 
       store.resumePatchPath(this.storePath);
       store.resume();

@@ -62,7 +62,7 @@ export default {
     // 1-based position, used for labels.
     position: {type: Number, required: true},
     recording: {type: Boolean, required: false, default: false},
-    // null, "modifier" or "duplicate".
+    // null, "modifier", "key", "duplicate" or "duplicateRejected".
     error: {type: String, required: false, default: null},
     duplicateOf: {type: Number, required: false, default: null},
   },
@@ -110,8 +110,11 @@ export default {
       if (this.error === "modifier") {
         return this.$t('message.system.shortcuts.needsModifier');
       }
-      if (this.error === "duplicate") {
-        return this.$t('message.system.shortcuts.duplicate', {position: this.duplicateOf});
+      if (this.error === "key") {
+        return this.$t('message.system.shortcuts.unsupportedKey');
+      }
+      if (this.error === "duplicate" || this.error === "duplicateRejected") {
+        return this.$t(`message.system.shortcuts.${this.error}`, {position: this.duplicateOf});
       }
       return "";
     },

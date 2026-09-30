@@ -638,7 +638,7 @@ export default {
             // Der macOS-Bereich "Tastenkürzel", nur sichtbar, wenn der Daemon Hotkeys meldet.
             shortcuts: {
                 title: "Tastenkürzel",
-                explanation: "Steuere GoXLR-Kanäle und die App im Vordergrund von überall auf deinem Mac. Kürzel brauchen mindestens eine der Tasten ⌃ ⌥ ⇧ ⌘, außer F13 bis F19.",
+                explanation: "Steuere GoXLR-Kanäle und die App im Vordergrund von überall auf deinem Mac. Kürzel brauchen ⌃, ⌥ oder ⌘ (⇧ nur zusammen mit einer davon), außer F13 bis F19.",
                 empty: "Noch keine Tastenkürzel.",
                 accessibilityList: "Tastenkürzel",
                 rowLabel: "Kürzel {position}",
@@ -662,8 +662,10 @@ export default {
                 remove: "{row} entfernen",
                 add: "Kürzel hinzufügen",
 
-                needsModifier: "Nutze mindestens eine der Tasten ⌃ ⌥ ⇧ ⌘. Nur F13 bis F19 funktionieren allein.",
+                needsModifier: "Nutze ⌃, ⌥ oder ⌘, ⇧ allein reicht nicht. Nur F13 bis F19 funktionieren allein.",
+                unsupportedKey: "Diese Taste kann nicht für ein Kürzel genutzt werden, versuche eine andere.",
                 duplicate: "Kürzel {position} nutzt diese Kombination bereits, dieses hier wird nicht gespeichert.",
+                duplicateRejected: "Kürzel {position} nutzt diese Kombination bereits, die vorherigen Tasten bleiben.",
                 saveFailed: "Die Tastenkürzel konnten nicht gespeichert werden",
 
                 addedAnnouncement: "Kürzel hinzugefügt, wähle eine Aktion und nimm eine Tastenkombination auf",

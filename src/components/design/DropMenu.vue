@@ -85,8 +85,9 @@ export default {
       menu.style.left = leftPosition;
       menu.style.top = topPosition;
 
-      // Activate the Menu..
+      // Activate the Menu, the option count may have changed since the last time it was open..
       this.is_active = true;
+      this.focus_id = 0;
 
       // Wait for the menu to render
       let self = this;
@@ -98,7 +99,11 @@ export default {
     hideContextMenu() {
       // There are odd cases when this can trigger twice, don't do it if we're not here anymore.
       if (this.is_active) {
-        this.$refs.menuList.children[this.focus_id].firstElementChild.tabIndex = -1;
+        let item = this.getItem(this.focus_id);
+        if (item !== null) {
+          item.tabIndex = -1;
+        }
+        this.focus_id = 0;
         this.is_active = false;
 
         // Return focus to the opening button...
@@ -120,13 +125,25 @@ export default {
       });
     },
 
+    // The link inside an option, or null if that option doesn't exist (anymore).
+    getItem(id) {
+      return this.$refs.menuList?.children[id]?.firstElementChild ?? null;
+    },
+
     setFocus(id) {
       // Remove the TabIndex from the Old item..
-      this.$refs.menuList.children[this.focus_id].firstElementChild.tabIndex = -1;
+      let old = this.getItem(this.focus_id);
+      if (old !== null) {
+        old.tabIndex = -1;
+      }
 
       // Set the focus on the new item and select..
-      this.$refs.menuList.children[id].firstElementChild.tabIndex = 0;
-      this.$refs.menuList.children[id].firstElementChild.focus();
+      let item = this.getItem(id);
+      if (item === null) {
+        return;
+      }
+      item.tabIndex = 0;
+      item.focus();
       this.focus_id = id;
     },
 
@@ -162,7 +179,9 @@ export default {
 
         case ' ':
         case 'Enter': {
-          this.optionClicked(this.options[this.focus_id]);
+          if (this.options[this.focus_id] !== undefined) {
+            this.optionClicked(this.options[this.focus_id]);
+          }
           break;
         }
       }

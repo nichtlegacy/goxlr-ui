@@ -9,8 +9,8 @@
                      :row="row"
                      :position="index + 1"
                      :recording="recordingId === row.id"
-                     :error="validation[row.id].error"
-                     :duplicate-of="validation[row.id].duplicateOf"
+                     :error="row.rejected?.error ?? validation[row.id].error"
+                     :duplicate-of="row.rejected?.duplicateOf ?? validation[row.id].duplicateOf"
                      @change="updateRow"
                      @record="startRecording"
                      @cancel-record="cancelRecording"
@@ -32,7 +32,7 @@ import ShortcutRow from "@/components/sections/system/shortcuts/ShortcutRow.vue"
 import {store} from "@/store";
 import {websocket} from "@/util/sockets";
 import {
-  comboKey, comboSpoken, emptyModifiers, hasModifier, isStandaloneKey, parseAction, serializeAction
+  comboError, comboKey, comboSpoken, emptyModifiers, parseAction, serializeAction
 } from "@/util/hotkeys";
 
 function normalizeModifiers(modifiers) {
@@ -86,8 +86,9 @@ export default {
         let state = {error: null, duplicateOf: null, sendable: false};
         if (row.code !== null) {
           let key = comboKey(row.code, row.modifiers);
-          if (!hasModifier(row.modifiers) && !isStandaloneKey(row.code)) {
-            state.error = "modifier";
+          let error = comboError(row.code, row.modifiers);
+          if (error !== null) {
+            state.error = error;
           } else if (seen.has(key)) {
             state.error = "duplicate";
             state.duplicateOf = seen.get(key) + 1;
@@ -123,30 +124,45 @@ export default {
         raw: null,
         code: null,
         modifiers: emptyModifiers(),
+        // Set when the last recording was refused, {error, duplicateOf}. The row keeps its previous keys.
+        rejected: null,
         ...fields,
       };
     },
 
-    // Rebuild from the daemon's list, keeping rows that only exist locally at the end.
+    // Rebuild from the daemon's list, keeping local-only rows (and matched row ids) where they were displayed.
     syncFromConfig() {
       let bindings = Array.isArray(this.configHotkeys) ? this.configHotkeys : [];
       let unused = this.rows.filter((row) => this.validation[row.id]?.sendable);
-      let localOnly = this.rows.filter((row) => !this.validation[row.id]?.sendable);
+      let localOnly = new Set(this.rows.filter((row) => !this.validation[row.id]?.sendable).map((row) => row.id));
 
-      this.rows = bindings.map((binding) => {
+      // Hold on to the row id where we can, so focus and recording aren't lost on a resync.
+      let synced = bindings.map((binding) => {
         let parsed = parseAction(binding.action);
         let modifiers = normalizeModifiers(binding.modifiers);
         let fields = {...parsed, code: binding.code ?? null, modifiers};
 
-        // Hold on to the row id where we can, so focus and recording aren't lost on a resync.
         let key = JSON.stringify(toBinding({...fields}));
         let index = unused.findIndex((row) => JSON.stringify(toBinding(row)) === key);
         if (index !== -1) {
           let row = unused.splice(index, 1)[0];
-          return {...row, ...fields};
+          return {row: {...row, ...fields}, existing: true};
         }
-        return this.newRow(fields);
-      }).concat(localOnly);
+        return {row: this.newRow(fields), existing: false};
+      });
+
+      // Matched rows stay in their slot, new ones go right after the binding before them.
+      let byId = new Map(synced.filter((entry) => entry.existing).map((entry) => [entry.row.id, entry.row]));
+      let rows = this.rows.filter((row) => localOnly.has(row.id) || byId.has(row.id))
+          .map((row) => byId.get(row.id) ?? row);
+      synced.forEach((entry, index) => {
+        if (entry.existing) {
+          return;
+        }
+        let previous = index > 0 ? rows.findIndex((row) => row.id === synced[index - 1].row.id) : -1;
+        rows.splice(previous + 1, 0, entry.row);
+      });
+      this.rows = rows;
 
       if (this.recordingId !== null && !this.rows.some((row) => row.id === this.recordingId)) {
         this.recordingId = null;
@@ -231,6 +247,10 @@ export default {
     },
 
     startRecording(id) {
+      let row = this.getRow(id);
+      if (row !== undefined) {
+        row.rejected = null;
+      }
       this.recordingId = id;
       store.setAccessibilityNotification("polite", this.$t('message.system.shortcuts.recordingAnnouncement'));
     },
@@ -248,19 +268,32 @@ export default {
       if (row === undefined) {
         return;
       }
-      row.code = code;
-      row.modifiers = normalizeModifiers(modifiers);
+      modifiers = normalizeModifiers(modifiers);
 
-      let state = this.validation[id];
-      let combo = comboSpoken(code, row.modifiers, this.$t);
-      if (state.error === "modifier") {
-        store.setAccessibilityNotification("assertive", this.$t('message.system.shortcuts.needsModifier'));
-      } else if (state.error === "duplicate") {
-        store.setAccessibilityNotification("assertive",
-            this.$t('message.system.shortcuts.duplicate', {position: state.duplicateOf}));
+      // Check before touching the row, a refused recording keeps the binding that already works.
+      let error = comboError(code, modifiers);
+      if (error === null) {
+        let key = comboKey(code, modifiers);
+        let other = this.rows.findIndex((entry) =>
+            entry.id !== id && entry.code !== null && comboKey(entry.code, entry.modifiers) === key);
+        if (other !== -1) {
+          row.rejected = {error: "duplicateRejected", duplicateOf: other + 1};
+          store.setAccessibilityNotification("assertive",
+              this.$t('message.system.shortcuts.duplicateRejected', {position: other + 1}));
+          return;
+        }
       } else {
-        store.setAccessibilityNotification("polite", this.$t('message.system.shortcuts.setAnnouncement', {combo}));
+        row.rejected = {error, duplicateOf: null};
+        let message = error === "key" ? 'unsupportedKey' : 'needsModifier';
+        store.setAccessibilityNotification("assertive", this.$t(`message.system.shortcuts.${message}`));
+        return;
       }
+
+      row.rejected = null;
+      row.code = code;
+      row.modifiers = modifiers;
+      store.setAccessibilityNotification("polite",
+          this.$t('message.system.shortcuts.setAnnouncement', {combo: comboSpoken(code, modifiers, this.$t)}));
       this.commit();
     },
   },

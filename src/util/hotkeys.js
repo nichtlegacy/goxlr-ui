@@ -17,8 +17,21 @@ const KEY_SYMBOLS = {
     Comma: ",", Period: ".", Slash: "/", Backquote: "`", IntlBackslash: "§",
     Enter: "↩", Tab: "⇥", Backspace: "⌫", Delete: "⌦", Home: "↖", End: "↘", PageUp: "⇞", PageDown: "⇟",
     NumpadAdd: "+", NumpadSubtract: "-", NumpadMultiply: "*", NumpadDivide: "/", NumpadDecimal: ".",
-    NumpadEqual: "=", NumpadEnter: "⌤", NumpadClear: "⌧",
+    NumpadEqual: "=", NumpadEnter: "⌤", NumLock: "⌧",
 };
+
+// The codes the daemon can map to a macOS key (key_code in daemon/src/platform/macos/hotkeys.rs), keep in sync.
+const SUPPORTED_CODES = new Set([
+    ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letter) => `Key${letter}`),
+    ..."0123456789".split("").map((digit) => `Digit${digit}`),
+    ..."0123456789".split("").map((digit) => `Numpad${digit}`),
+    ...Array.from({length: 20}, (_, index) => `F${index + 1}`),
+    "Minus", "Equal", "BracketLeft", "BracketRight", "Backslash", "Semicolon", "Quote", "Comma", "Period", "Slash",
+    "Backquote", "IntlBackslash", "Enter", "Tab", "Space", "Backspace", "Delete", "Escape",
+    "Home", "End", "PageUp", "PageDown", "ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp",
+    "NumpadDecimal", "NumpadMultiply", "NumpadAdd", "NumpadSubtract", "NumpadDivide", "NumpadEnter", "NumpadEqual",
+    "NumLock",
+]);
 
 // Keys whose symbol a screen reader wouldn't read well, spelled out through message.system.shortcuts.keyNames.
 const SPOKEN_KEYS = [
@@ -36,8 +49,24 @@ export function isStandaloneKey(code) {
     return match !== null && parseInt(match[1]) >= 13 && parseInt(match[1]) <= 19;
 }
 
+export function isSupportedKey(code) {
+    return SUPPORTED_CODES.has(code);
+}
+
+// Shift only counts together with ⌘, ⌥ or ⌃, same rule as the daemon.
 export function hasModifier(modifiers) {
-    return !!(modifiers?.command || modifiers?.option || modifiers?.control || modifiers?.shift);
+    return !!(modifiers?.command || modifiers?.option || modifiers?.control);
+}
+
+// null when the daemon would register the combination, otherwise "key" or "modifier".
+export function comboError(code, modifiers) {
+    if (!isSupportedKey(code)) {
+        return "key";
+    }
+    if (!hasModifier(modifiers) && !isStandaloneKey(code)) {
+        return "modifier";
+    }
+    return null;
 }
 
 export function emptyModifiers() {
@@ -45,7 +74,7 @@ export function emptyModifiers() {
 }
 
 function isNumpad(code) {
-    return code.startsWith("Numpad");
+    return code.startsWith("Numpad") || code === "NumLock";
 }
 
 export function keyLabel(code, t) {

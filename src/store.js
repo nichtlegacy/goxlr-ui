@@ -1,5 +1,5 @@
 import { reactive } from "vue";
-import { applyOperation } from "fast-json-patch";
+import { applyOperation, getValueByPointer } from "fast-json-patch";
 import { websocket } from "@/util/sockets";
 
 
@@ -136,12 +136,36 @@ export const store = reactive({
         return this.status.files.icons;
     },
 
-    replaceData(json) {
-        if (this.active) {
-            Object.assign(this.status, json.Status);
-            this.have_device = true;
-            this.validateActive();
+    // force applies the status even while a slider is held, keeping the held values as they are.
+    replaceData(json, force = false) {
+        if (!this.active && !force) {
+            return;
         }
+
+        let held = [];
+        if (!this.active) {
+            for (let path of this.pausedPaths.filter((path) => path !== undefined)) {
+                try {
+                    held.push({path, value: getValueByPointer(this.status, path)});
+                } catch (e) {
+                    // Not in our copy, nothing to hold on to.
+                }
+            }
+        }
+
+        Object.assign(this.status, json.Status);
+        for (let {path, value} of held) {
+            try {
+                // Gone from the new status (device removed or similar), take the daemon's version.
+                if (value !== undefined && getValueByPointer(this.status, path) !== undefined) {
+                    applyOperation(this.status, {op: "replace", path, value}, false, true, false);
+                }
+            } catch (e) {
+                // Parent is gone as well, same as above.
+            }
+        }
+        this.have_device = true;
+        this.validateActive();
     },
 
     pausePatchPath(path) {
@@ -192,8 +216,9 @@ export const store = reactive({
         }
         this.resyncing = true;
 
+        // A resync is only asked for when our copy is broken, so it can't wait for the slider to be let go.
         websocket.get_status().then((data) => {
-            this.replaceData(data);
+            this.replaceData(data, true);
         }).catch(() => {
             // If the socket is gone, the reconnect will fetch a fresh status anyway.
         }).finally(() => {

@@ -678,7 +678,7 @@ export default {
             // The macOS "Keyboard shortcuts" section, only shown when the daemon reports hotkeys.
             shortcuts: {
                 title: "Keyboard shortcuts",
-                explanation: "Control GoXLR channels and the frontmost app from anywhere on your Mac. Shortcuts need at least one of ⌃ ⌥ ⇧ ⌘, except F13 to F19.",
+                explanation: "Control GoXLR channels and the frontmost app from anywhere on your Mac. Shortcuts need ⌃, ⌥ or ⌘ (⇧ only together with one of them), except F13 to F19.",
                 empty: "No keyboard shortcuts yet.",
                 accessibilityList: "Keyboard shortcuts",
                 rowLabel: "Shortcut {position}",
@@ -702,8 +702,10 @@ export default {
                 remove: "Remove {row}",
                 add: "Add shortcut",
 
-                needsModifier: "Add at least one of ⌃ ⌥ ⇧ ⌘. Only F13 to F19 work on their own.",
+                needsModifier: "Add ⌃, ⌥ or ⌘, ⇧ alone isn't enough. Only F13 to F19 work on their own.",
+                unsupportedKey: "This key can't be used for a shortcut, try another one.",
                 duplicate: "Shortcut {position} already uses this combination, this one isn't saved.",
+                duplicateRejected: "Shortcut {position} already uses this combination, the previous keys are kept.",
                 saveFailed: "Couldn't save the keyboard shortcuts",
 
                 addedAnnouncement: "Shortcut added, choose an action and record a key combination",

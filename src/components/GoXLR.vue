@@ -237,9 +237,10 @@ export default {
     },
 
     // Only present when the daemon runs on macOS with the virtual audio driver.
+    // The daemon sends null here on anything but macOS.
     hasAppAudio() {
-      let config = store.getConfig();
-      return config !== undefined && config.macos_app_audio !== undefined && config.macos_app_audio !== null;
+      let appAudio = store.getConfig()?.macos_app_audio;
+      return appAudio !== null && typeof appAudio === "object" && !Array.isArray(appAudio);
     },
 
     isDeviceSet() {

@@ -60,7 +60,8 @@ export default {
 
   data() {
     return {
-      // Local copies of rules we've just sent, so the controls don't jump back while the daemon catches up.
+      // Per-field overrides we've just sent ({fields, pending, timer}), so the controls don't jump back while the
+      // daemon catches up. Only touched fields are kept, everything else comes from the stored rule.
       drafts: {},
 
       levels: {},
@@ -176,25 +177,24 @@ export default {
     },
 
     effectiveRule(bundle_id) {
+      let stored = this.rules[bundle_id] ?? DEFAULT_RULE;
       let draft = this.drafts[bundle_id];
-      if (draft !== undefined) {
-        return draft.rule;
-      }
-      return this.rules[bundle_id] ?? DEFAULT_RULE;
+      return draft === undefined ? stored : {...stored, ...draft.fields};
     },
 
     updateRule(bundle_id, change) {
-      let rule = {...this.effectiveRule(bundle_id), ...change};
-
       let draft = this.drafts[bundle_id];
       if (draft === undefined) {
-        draft = {rule, pending: 0, timer: undefined};
+        draft = {fields: {}, pending: 0, timer: undefined};
         this.drafts[bundle_id] = draft;
       }
       draft = this.drafts[bundle_id];
-      draft.rule = rule;
+      draft.fields = {...draft.fields, ...change};
       draft.pending++;
       clearTimeout(draft.timer);
+
+      // Built on the latest stored rule, so a mute from the tray or a hotkey isn't sent back undone.
+      let rule = this.effectiveRule(bundle_id);
 
       let finish = () => {
         let current = this.drafts[bundle_id];
@@ -216,16 +216,23 @@ export default {
       }).then(finish, finish);
     },
 
-    // Drop drafts the store has caught up with.
+    // Drop draft fields the store has caught up with. Once our writes have settled, a field the daemon changed
+    // since the last look (tray, hotkey..) wins over the draft too.
     pruneDrafts() {
+      let previous = this.lastRules;
+      this.lastRules = JSON.parse(JSON.stringify(this.rules));
+
       for (let id of Object.keys(this.drafts)) {
         let draft = this.drafts[id];
-        if (draft.pending !== 0) {
-          continue;
-        }
         let stored = this.rules[id] ?? DEFAULT_RULE;
-        if (stored.route === draft.rule.route && stored.volume === draft.rule.volume &&
-            stored.muted === draft.rule.muted) {
+        let before = previous[id] ?? DEFAULT_RULE;
+        for (let field of Object.keys(draft.fields)) {
+          let changed = stored[field] !== before[field];
+          if (stored[field] === draft.fields[field] || (changed && draft.pending === 0)) {
+            delete draft.fields[field];
+          }
+        }
+        if (draft.pending === 0 && Object.keys(draft.fields).length === 0) {
           clearTimeout(draft.timer);
           delete this.drafts[id];
         }
@@ -392,6 +399,11 @@ export default {
     hiddenIds() {
       this.restoreFocusIfLost();
     },
+  },
+
+  created() {
+    // Not reactive, only used to spot which rule fields a status update changed.
+    this.lastRules = JSON.parse(JSON.stringify(this.rules));
   },
 
   mounted() {
