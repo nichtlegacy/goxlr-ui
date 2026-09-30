@@ -904,6 +904,7 @@ export default {
 
             hiddenApps: "Ausgeblendete Apps ({count})",
             hiddenAppsList: "Ausgeblendete Apps",
+            mixerNotice: "{app} läuft. Es spielt die Apps, die es steuert, selbst ab, daher erreichen die Einstellungen hier diese Apps nicht. Lass sie in {app} unverändert oder beende {app}.",
             otherApps: "Weitere Apps mit Audio ({count})",
             otherAppsList: "Weitere Apps mit Audio",
             unhide: "Einblenden",

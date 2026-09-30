@@ -954,6 +954,7 @@ export default {
 
             hiddenApps: "Hidden apps ({count})",
             hiddenAppsList: "Hidden apps",
+            mixerNotice: "{app} is running. It plays the apps it controls from its own process, so the settings here don't reach them. Leave those apps untouched in {app} or quit it.",
             otherApps: "Other apps using audio ({count})",
             otherAppsList: "Other apps using audio",
             unhide: "Unhide",

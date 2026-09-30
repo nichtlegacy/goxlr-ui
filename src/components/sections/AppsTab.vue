@@ -2,6 +2,9 @@
   <div class="appsPage">
     <GroupContainer :title="$t('message.apps.title')">
       <div class="appList" ref="list" tabindex="-1">
+        <p v-for="mixer in mixers" :key="mixer" class="notice" role="note">
+          {{ $t('message.apps.mixerNotice', { app: mixer }) }}
+        </p>
         <p v-if="entries.length === 0" class="empty">{{ $t('message.apps.empty') }}</p>
         <ul v-else class="rows" :aria-label="$t('message.apps.accessibilityList')">
           <AppRow v-for="entry in entries" :key="entry.bundle_id"
@@ -102,6 +105,11 @@ export default {
   computed: {
     appAudio() {
       return store.getConfig()?.macos_app_audio;
+    },
+
+    // Per-app mixers such as FineTune replay the apps they control from their own process.
+    mixers() {
+      return this.appAudio?.mixers ?? [];
     },
 
     hiddenIds() {
@@ -487,6 +495,15 @@ export default {
 .rows > :nth-child(even),
 .hiddenApps li:nth-child(even) {
   background-color: #242826;
+}
+
+.notice {
+  margin: 0 0 10px 0;
+  padding: 10px 14px;
+  border-left: 3px solid #d0c060;
+  background-color: #242826;
+  color: #ccc;
+  line-height: 1.4;
 }
 
 .empty {
